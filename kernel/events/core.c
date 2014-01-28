@@ -2960,6 +2960,14 @@ static int perf_release(struct inode *inode, struct file *file)
 	struct task_struct *owner;
 
 	file->private_data = NULL;
+	
+	/*
+	 * Event can be in state OFF because of a constraint check.
+	 * Change to ACTIVE so that it gets cleaned up correctly.
+	 */
+	if ((event->state == PERF_EVENT_STATE_OFF) &&
+	    event->attr.constraint_duplicate)
+		event->state = PERF_EVENT_STATE_ACTIVE;
 
 	rcu_read_lock();
 	owner = ACCESS_ONCE(event->owner);
