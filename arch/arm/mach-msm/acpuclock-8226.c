@@ -41,6 +41,8 @@ static struct msm_bus_paths bw_level_tbl_8226[] = {
 	[5] = BW_MBPS(2128), /* At least 266 MHz on bus. */
 	[6] = BW_MBPS(3200), /* At least 400 MHz on bus. */
 	[7] = BW_MBPS(4264), /* At least 533 MHz on bus. */
+        [8] = BW_MBPS(4660), /* At least 583 MHz on bus. */
+	[9] = BW_MBPS(4800), /* At least 600 MHz on bus. */
 };
 
 static struct msm_bus_paths bw_level_tbl_8610[] = {
@@ -72,13 +74,13 @@ static struct clkctl_acpu_speed acpu_freq_tbl_8226_1p1[] = {
 
 #ifdef CONFIG_USERSPACE_VOLTAGE_CONTROL
 static struct clkctl_acpu_speed acpu_freq_tbl_8226_1p2[] = {
-	{ 1,  300000, PLL0,    4, 2,   1140000,    1140000, 4 },
-	{ 1,  384000, ACPUPLL, 5, 2,   1140000,    1140000, 4 },
-	{ 1,  600000, PLL0,    4, 0,   1140000,    1140000, 6 },
-	{ 1,  787200, ACPUPLL, 5, 0,   1140000,    1140000, 6 },
-	{ 1,  998400, ACPUPLL, 5, 0,   1150000,    1150000, 7 },
-	{ 1, 1094400, ACPUPLL, 5, 0,   1150000,    1150000, 7 },
-	{ 1, 1190400, ACPUPLL, 5, 0,   1150000,    1150000, 7 },
+	{ 1,  300000, PLL0,    4, 2,   1140000,    1140000, 5 },
+	{ 1,  384000, ACPUPLL, 5, 2,   1140000,    1140000, 6 },
+	{ 1,  600000, PLL0,    4, 0,   1140000,    1140000, 7 },
+	{ 1,  787200, ACPUPLL, 5, 0,   1140000,    1140000, 8 },
+	{ 1,  998400, ACPUPLL, 5, 0,   1150000,    1150000, 9 },
+	{ 1, 1094400, ACPUPLL, 5, 0,   1150000,    1150000, 9 },
+	{ 1, 1190400, ACPUPLL, 5, 0,   1150000,    1150000, 9 },
 	{ 0 }
 };
 #else
