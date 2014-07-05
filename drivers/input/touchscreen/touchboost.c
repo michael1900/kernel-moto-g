@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, Francisco Franco. All rights reserved.
+ * Copyright (c) 2013-2014, Francisco Franco. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -35,6 +35,11 @@
  */
 u64 last_input_time;
 
+struct touchboost_inputopen {
+	struct input_handle *handle;
+	struct work_struct inputopen_work;
+} touchboost_inputopen;
+
 static void boost_input_event(struct input_handle *handle,
                 unsigned int type, unsigned int code, int value)
 {
@@ -44,8 +49,20 @@ static void boost_input_event(struct input_handle *handle,
 
 	if (now - last_input_time < MIM_TIME_INTERVAL_US)
 		return;
-	
+
 	last_input_time = ktime_to_us(ktime_get());
+}
+
+static void boost_input_open(struct work_struct *w)
+{
+	struct touchboost_inputopen *io = 
+		container_of(w, struct touchboost_inputopen, inputopen_work);
+
+	int error;
+
+	error = input_open_device(io->handle);
+	if (error)
+		input_unregister_handle(io->handle);
 }
 
 static int boost_input_connect(struct input_handler *handler,
@@ -60,20 +77,17 @@ static int boost_input_connect(struct input_handler *handler,
 
 	handle->dev = dev;
 	handle->handler = handler;
-	handle->name = "cpufreq";
+	handle->name = "touchboost";
 
 	error = input_register_handle(handle);
 	if (error)
-		goto err2;
+		goto err;
 
-	error = input_open_device(handle);
-	if (error)
-		goto err1;
-
+	touchboost_inputopen.handle = handle;
+	schedule_work(&touchboost_inputopen.inputopen_work);
 	return 0;
-err1:
-	input_unregister_handle(handle);
-err2:
+
+err:
 	kfree(handle);
 	return error;
 }
@@ -89,11 +103,19 @@ static const struct input_device_id boost_ids[] = {
 	/* multi-touch touchscreen */
 	{
 		.flags = INPUT_DEVICE_ID_MATCH_EVBIT |
-				INPUT_DEVICE_ID_MATCH_ABSBIT,
+			INPUT_DEVICE_ID_MATCH_ABSBIT,
 		.evbit = { BIT_MASK(EV_ABS) },
 		.absbit = { [BIT_WORD(ABS_MT_POSITION_X)] =
-				BIT_MASK(ABS_MT_POSITION_X) |
-				BIT_MASK(ABS_MT_POSITION_Y) },
+			BIT_MASK(ABS_MT_POSITION_X) |
+			BIT_MASK(ABS_MT_POSITION_Y) },
+	},
+	/* touchpad */
+	{
+		.flags = INPUT_DEVICE_ID_MATCH_KEYBIT |
+			INPUT_DEVICE_ID_MATCH_ABSBIT,
+		.keybit = { [BIT_WORD(BTN_TOUCH)] = BIT_MASK(BTN_TOUCH) },
+		.absbit = { [BIT_WORD(ABS_X)] =
+			BIT_MASK(ABS_X) | BIT_MASK(ABS_Y) },
 	},
 	/* Keypad */
 	{
@@ -114,7 +136,9 @@ static struct input_handler boost_input_handler = {
 static int init(void)
 {
 	int ret;
-	
+
+        INIT_WORK(&touchboost_inputopen.inputopen_work, boost_input_open);
+
 	ret = input_register_handler(&boost_input_handler);
 	if (ret) {
 		pr_err("Failed to register input handler, error: %d", ret);
