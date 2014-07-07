@@ -25,13 +25,56 @@
  */
 
 enum {
-	WAKE_LOCK_SUSPEND, /* Prevent suspend */
-	WAKE_LOCK_TYPE_COUNT
+	WAKE_LOCK_SUSPEND, /* Prevent suspend */	
+        WAKE_LOCK_TYPE_COUNT
 };
 
 struct wake_lock {
-	struct wakeup_source ws;
+
+#ifdef CONFIG_HAS_WAKELOCK
+        struct list_head    link;
+        int                 flags;
+        const char          *name;
+        unsigned long       expires;
+#ifdef CONFIG_WAKELOCK_STAT
+        struct {
+                int             count;
+                int             expire_count;
+                int             wakeup_count;
+                ktime_t         total_time;
+                ktime_t         prevent_suspend_time;
+                ktime_t         max_time;
+                ktime_t         last_time;
+        } stat;
+#endif
+#endif
+
+struct wakeup_source ws;
+
 };
+
+#ifdef CONFIG_HAS_WAKELOCK
+
+void wake_lock_init(struct wake_lock *lock, int type, const char *name);
+void wake_lock_destroy(struct wake_lock *lock);
+void wake_lock(struct wake_lock *lock);
+void wake_lock_timeout(struct wake_lock *lock, long timeout);
+void wake_unlock(struct wake_lock *lock);
+
+/* wake_lock_active returns a non-zero value if the wake_lock is currently
+ * locked. If the wake_lock has a timeout, it does not check the timeout
+ * but if the timeout had aready been checked it will return 0.
+ */
+int wake_lock_active(struct wake_lock *lock);
+
+/* has_wake_lock returns 0 if no wake locks of the specified type are active,
+ * and non-zero if one or more wake locks are held. Specifically it returns
+ * -1 if one or more wake locks with no timeout are active or the
+ * number of jiffies until all active wake locks time out.
+ */
+long has_wake_lock(int type);
+
+#else
 
 static inline void wake_lock_init(struct wake_lock *lock, int type,
 				  const char *name)
@@ -63,5 +106,7 @@ static inline int wake_lock_active(struct wake_lock *lock)
 {
 	return lock->ws.active;
 }
+
+#endif
 
 #endif

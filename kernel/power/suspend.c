@@ -22,6 +22,8 @@
 #include <linux/mm.h>
 #include <linux/slab.h>
 #include <linux/export.h>
+#include <linux/quickwakeup.h>
+#include <linux/wakelock.h>
 #include <linux/suspend.h>
 #include <linux/syscore_ops.h>
 #include <linux/rtc.h>
@@ -33,7 +35,8 @@ static void suspend_timeout(unsigned long data);
 static DEFINE_TIMER(suspend_wd, suspend_timeout, 0, 0);
 
 const char *const pm_states[PM_SUSPEND_MAX] = {
-#ifdef CONFIG_EARLYSUSPEND
+//#ifdef CONFIG_EARLYSUSPEND
+#ifdef CONFIG_POWERSUSPEND
 	[PM_SUSPEND_ON]		= "on",
 #endif
 	[PM_SUSPEND_STANDBY]	= "standby",
@@ -179,6 +182,28 @@ static int suspend_enter(suspend_state_t state, bool *wakeup)
 {
 	int error;
 
+        arch_suspend_disable_irqs();
+	BUG_ON(!irqs_disabled());
+
+	error = syscore_suspend();
+	if (!error) {
+		*wakeup = pm_wakeup_pending();
+		if (!(suspend_test(TEST_CORE) || *wakeup)) {
+			error = suspend_ops->enter(state);
+			events_check_enabled = false;
+		}
+		syscore_resume();
+	}
+	if (!error) {
+#ifdef CONFIG_QUICK_WAKEUP
+		quickwakeup_check();
+#endif
+	}
+	arch_suspend_enable_irqs();
+	BUG_ON(irqs_disabled());
+	return error;
+
+
 	if (suspend_ops->prepare) {
 		error = suspend_ops->prepare();
 		if (error)
@@ -204,7 +229,7 @@ static int suspend_enter(suspend_state_t state, bool *wakeup)
 	if (error || suspend_test(TEST_CPUS))
 		goto Enable_cpus;
 
-	arch_suspend_disable_irqs();
+	/*arch_suspend_disable_irqs();
 	BUG_ON(!irqs_disabled());
 
 	error = syscore_suspend();
@@ -218,7 +243,15 @@ static int suspend_enter(suspend_state_t state, bool *wakeup)
 	}
 
 	arch_suspend_enable_irqs();
-	BUG_ON(irqs_disabled());
+	BUG_ON(irqs_disabled());*/
+	error = suspend_ops->enter(state);
+#ifdef CONFIG_QUICK_WAKEUP
+		while (!error && !quickwakeup_execute()) {
+			if (has_wake_lock(WAKE_LOCK_SUSPEND))
+				break;
+			error = suspend_ops->enter(state);
+		}
+#endif
 
  Enable_cpus:
 	enable_nonboot_cpus();

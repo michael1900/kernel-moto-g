@@ -305,6 +305,18 @@ config SUSPEND_TIME
 	  keeps statistics on the time spent in suspend in
 	  /sys/kernel/debug/suspend_time
 
+config HAS_WAKELOCK
+	bool
+
+config WAKELOCK
+	bool "Wake lock"
+	depends on PM && RTC_CLASS
+	default n
+	select HAS_WAKELOCK
+	---help---
+	  Enable wakelocks. When user space request a sleep state the
+          sleep request will be delayed until no wake locks are held.
+
 config QUICK_WAKEUP
 	bool "Quick wakeup"
 	depends on SUSPEND
