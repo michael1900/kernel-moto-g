@@ -67,6 +67,7 @@ config FTRACE_NMI_ENTER
 
 config EVENT_TRACING
 	select CONTEXT_SWITCH_TRACER
+        default n
 	bool
 
 config EVENT_POWER_TRACING_DEPRECATED
@@ -160,7 +161,7 @@ config FUNCTION_GRAPH_TRACER
 	depends on HAVE_FUNCTION_GRAPH_TRACER
 	depends on FUNCTION_TRACER
 	depends on !X86_32 || !CC_OPTIMIZE_FOR_SIZE
-	default y
+	default n
 	help
 	  Enable the kernel to trace a function at both its return
 	  and its entry.
@@ -243,6 +244,7 @@ config FTRACE_SYSCALLS
 	depends on HAVE_SYSCALL_TRACEPOINTS
 	select GENERIC_TRACER
 	select KALLSYMS
+	default n
 	help
 	  Basic tracer to catch the syscall entry and exit events.
 
@@ -396,7 +398,7 @@ config DYNAMIC_FTRACE
 	bool "enable/disable ftrace tracepoints dynamically"
 	depends on FUNCTION_TRACER
 	depends on HAVE_DYNAMIC_FTRACE
-	default y
+	default n
 	help
           This option will modify all the calls to ftrace dynamically
 	  (will patch them out of the binary image and replace them
