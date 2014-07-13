@@ -30,8 +30,8 @@
 
 #define MSM_LIMIT			"msm_limiter"
 #define DEFAULT_SUSPEND_DEFER_TIME	10
-#define DEFAULT_SUSPEND_FREQUENCY	1728000
-#define DEFAULT_RESUME_FREQUENCY	2265600
+#define DEFAULT_SUSPEND_FREQUENCY	300000
+#define DEFAULT_RESUME_FREQUENCY	787200
 
 static unsigned int debug = 0;
 module_param_named(debug_mask, debug, uint, 0644);
